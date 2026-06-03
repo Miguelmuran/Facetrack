@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaceTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --accent: #00e5a0;
+    --accent2: #00b37d;
+    --text: #f0f0f5;
+    --muted: #8888a0;
+    --danger: #ff4d6d;
+    --warn: #ffb347;
+    --info: #4da6ff;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 72px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0;
+    gap: 8px;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+  }
+
+  .logo {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .logo svg { width: 22px; height: 22px; }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  .nav-tooltip {
+    position: absolute;
+    left: 56px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .nav-btn:hover .nav-tooltip { opacity: 1; }
+
+  /* MAIN */
+  .main {
+    margin-left: 72px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .page-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .badge-online { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* PAGES */
+  .page { display: none; flex: 1; overflow-y: auto; padding: 32px; }
+  .page.active { display: flex; flex-direction: column; gap: 24px; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title svg { width: 16px; height: 16px; }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+
+  .btn svg { width: 18px; height: 18px; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(255,77,109,0.15); color: var(--danger); border: 1px solid rgba(255,77,109,0.3); }
+  .btn-full { width: 100%; }
+
+  /* PHOTO UPLOAD */
+  .photo-upload {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .photo-upload:hover { border-color: var(--accent); background: rgba(0,229,160,0.03); }
+  .photo-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .photo-upload-icon { color: var(--muted); margin-bottom: 12px; }
+  .photo-upload-icon svg { width: 40px; height: 40px; }
+  .photo-upload p { font-size: 14px; color: var(--muted); }
+  .photo-upload strong { color: var(--accent); }
+
+  .photo-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    display: none;
+  }
+
+  /* FACE SCANNER */
+  .scanner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .camera-frame {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  #video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .camera-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .face-guide {
+    width: 200px;
+    height: 240px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    opacity: 0.6;
+    animation: scanline 2s ease-in-out infinite;
+    position: relative;
+  }
+
+  @keyframes scanline {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,160,0.3); }
+    50% { box-shadow: 0 0 0 16px rgba(0,229,160,0); }
+  }
+
+  .scan-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scan 2s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { top: 0; opacity: 1; }
+    100% { top: 100%; opacity: 0.3; }
+  }
+
+  .corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--accent);
+    border-style: solid;
+    opacity: 0.8;
+  }
+
+  .corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 2px 0 0 0; }
+  .corner-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-radius: 0 2px 0 0; }
+  .corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; border-radius: 0 0 0 2px; }
+  .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 2px 0; }
+
+  .scanner-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: var(--surface2);
+    border-radius: 20px;
+    font-size: 14px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .status-waiting { background: var(--muted); }
+  .status-scanning { background: var(--accent); animation: pulse 1s infinite; }
+  .status-success { background: var(--accent); }
+  .status-error { background: var(--danger); }
+
+  .scanner-result {
+    width: 100%;
+    max-width: 480px;
+    display: none;
+  }
+
+  .result-success {
+    background: rgba(0,229,160,0.08);
+    border: 1px solid rgba(0,229,160,0.3);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .result-error {
+    background: rgba(255,77,109,0.08);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .result-icon svg { width: 32px; height: 32px; }
+  .result-name { font-size: 18px; font-weight: 700; }
+  .result-meta { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
+
+  /* RELATORIO */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .stat-card {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.blue { color: var(--info); }
+
+  /* DATE PICKER */
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  input[type="date"] {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 10px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    color-scheme: dark;
+  }
+
+  input[type="date"]:focus { border-color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody td { padding: 14px 16px; color: var(--text); }
+
+  .td-mono { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .chip-green { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .chip-red { background: rgba(255,77,109,0.12); color: var(--danger); }
+
+  /* LOGIN */
+  .login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--bg);
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .login-logo {
+    width: 52px;
+    height: 52px;
+    background: var(--accent);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .login-logo svg { width: 28px; height: 28px; }
+  .login-title { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 6px; }
+  .login-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+  .login-form { display: flex; flex-direction: column; gap: 16px; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-text { font-size: 12px; color: var(--muted); }
+
+  .tab-row {
+    display: flex;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active { background: var(--surface); color: var(--text); }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    display: none;
+  }
+
+  .alert-error { background: rgba(255,77,109,0.1); color: var(--danger); border: 1px solid rgba(255,77,109,0.3); }
+  .alert-success { background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--muted);
+  }
+
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #canvas { display: none; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 4-7 9-7s9 3 9 7"/>
+        <circle cx="19" cy="8" r="2" fill="#000" stroke="none"/>
+        <path d="M16.5 6.5L19 8l-1 2" stroke="#000" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <h1 class="login-title">FaceTrack</h1>
+    <p class="login-sub">Sistema de frequência por reconhecimento facial</p>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('login')">Entrar</button>
+      <button class="tab-btn" onclick="switchTab('register')">Cadastrar</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm" class="login-form">
+      <div id="loginAlert" class="alert alert-error"></div>
+      <div class="form-group">
+        <label>MATRÍCULA</label>
+        <input type="text" id="loginMatricula" placeholder="Ex: 236051">
+      </div>
+      <div class="form-group">
+        <label>SENHA</label>
+        <input type="password" id="loginSenha" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="fazerLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 3h6v18h-6M10 17l5-5-5-5M3 12h12"/></svg>
+        Entrar
+        <div class="spinner" id="loginSpinner"></div>
+      </button>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" class="login-form" style="display:none">
+      <div id="registerAlert" class="alert alert-error"></div>
+      <div class="form-group">
+        <label>NOME COMPLETO</label>
+        <input type="text" id="regNome" placeholder="Seu nome completo">
+      </div>
+      <div class="form-group">
+        <label>MATRÍCULA</label>
+        <input type="text" id="regMatricula" placeholder="Ex: 236051">
+      </div>
+      <div class="form-group">
+        <label>E-MAIL</label>
+        <input type="email" id="regEmail" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>FOTO DO ROSTO</label>
+        <div class="photo-upload" id="uploadArea">
+          <input type="file" id="fotoInput" accept="image/*" onchange="previewFoto(this)">
+          <div class="photo-upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 4-7 9-7s9 3 9 7"/><path d="M19 3v6M16 6h6" stroke-width="2"/></svg>
+          </div>
+          <p><strong>Clique</strong> para selecionar uma foto</p>
+          <p style="font-size:12px; margin-top:4px;">JPG ou PNG, rosto visível</p>
+          <img class="photo-preview" id="photoPreview">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="cadastrarAluno()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Cadastrar
+        <div class="spinner" id="regSpinner"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appPage" style="display:none; width:100%; display:none">
+  <div class="sidebar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 4-7 9-7s9 3 9 7"/>
+      </svg>
+    </div>
+    <button class="nav-btn active" onclick="showPage('scanner')" id="nav-scanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="4"/><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/></svg>
+      <span class="nav-tooltip">Leitura Facial</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('cadastro')" id="nav-cadastro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+      <span class="nav-tooltip">Cadastrar Aluno</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('relatorio')" id="nav-relatorio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M8 12h8"/></svg>
+      <span class="nav-tooltip">Relatório</span>
+    </button>
+    <div style="flex:1"></div>
+    <button class="nav-btn" onclick="logout()" style="margin-top:auto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      <span class="nav-tooltip">Sair</span>
+    </button>
+  </div>
+
+  <div class="main">
+
+    <!-- SCANNER PAGE -->
+    <div class="page active" id="page-scanner">
+      <div class="header">
+        <div>
+          <div class="page-title">Leitura Facial</div>
+          <div class="page-subtitle">Posicione o rosto na câmera para registrar presença</div>
+        </div>
+        <div class="header-right">
+          <span class="badge badge-online"><span class="badge-dot"></span>API conectada</span>
+        </div>
+      </div>
+
+      <div style="padding: 32px; overflow-y:auto; flex:1">
+        <div class="scanner-container">
+          <div class="camera-frame">
+            <video id="video" autoplay playsinline muted></video>
+            <div class="camera-overlay">
+              <div class="face-guide">
+                <div class="scan-line"></div>
+              </div>
+            </div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+          </div>
+
+          <div class="scanner-status" id="scannerStatus">
+            <div class="status-dot status-waiting" id="statusDot"></div>
+            <span id="statusText">Aguardando câmera...</span>
+          </div>
+
+          <div style="display:flex; gap:12px">
+            <button class="btn btn-primary" onclick="iniciarCamera()" id="btnCamera">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="10" r="4"/><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/></svg>
+              Ligar Câmera
+            </button>
+            <button class="btn btn-secondary" onclick="capturarEReconhecer()" id="btnCapturar" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M6.343 6.343A8 8 0 1017.657 17.657 8 8 0 006.343 6.343z"/></svg>
+              Registrar Presença
+            </button>
+          </div>
+
+          <div class="scanner-result" id="scannerResult"></div>
+
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CADASTRO PAGE -->
+    <div class="page" id="page-cadastro">
+      <div class="header">
+        <div>
+          <div class="page-title">Cadastrar Aluno</div>
+          <div class="page-subtitle">Adicione um novo aluno ao sistema</div>
+        </div>
+      </div>
+
+      <div style="padding: 32px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:24px">
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+            Dados do Aluno
+          </div>
+          <div id="cadAlert" class="alert" style="margin-bottom:16px"></div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>NOME COMPLETO</label>
+              <input type="text" id="cadNome" placeholder="Nome completo do aluno">
+            </div>
+            <div class="form-group">
+              <label>MATRÍCULA</label>
+              <input type="text" id="cadMatricula" placeholder="Ex: 236051">
+            </div>
+            <div class="form-group">
+              <label>E-MAIL</label>
+              <input type="email" id="cadEmail" placeholder="aluno@facens.edu.br">
+            </div>
+            <div class="form-group full">
+              <label>FOTO DO ROSTO</label>
+              <div class="photo-upload" id="cadUploadArea">
+                <input type="file" id="cadFoto" accept="image/*" onchange="previewCadFoto(this)">
+                <div class="photo-upload-icon" id="cadUploadIcon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 4-7 9-7s9 3 9 7"/><path d="M19 3v6M16 6h6" stroke-width="2"/></svg>
+                </div>
+                <p id="cadUploadText"><strong>Clique</strong> para selecionar uma foto frontal do aluno</p>
+                <img class="photo-preview" id="cadPhotoPreview">
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:24px; display:flex; gap:12px">
+            <button class="btn btn-primary" onclick="cadastrarAlunoApp()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Cadastrar Aluno
+              <div class="spinner" id="cadSpinner"></div>
+            </button>
+            <button class="btn btn-secondary" onclick="limparCadastro()">Limpar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Alunos Cadastrados
+          </div>
+          <div class="table-wrap">
+            <table id="alunosTable">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Matrícula</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="alunosBody">
+                <tr><td colspan="3"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Nenhum aluno cadastrado</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RELATORIO PAGE -->
+    <div class="page" id="page-relatorio">
+      <div class="header">
+        <div>
+          <div class="page-title">Relatório de Presença</div>
+          <div class="page-subtitle">Visualize e exporte registros de frequência</div>
+        </div>
+      </div>
+
+      <div style="padding: 32px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:24px">
+        <div class="card">
+          <div class="date-row">
+            <div class="form-group" style="flex-direction:row; align-items:center; gap:12px; margin:0">
+              <label style="white-space:nowrap">DATA:</label>
+              <input type="date" id="dataRelatorio">
+            </div>
+            <button class="btn btn-primary" onclick="carregarRelatorio()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              Buscar
+            </button>
+            <button class="btn btn-secondary" onclick="exportarCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid" style="display:none">
+          <div class="stat-card">
+            <div class="stat-label">Presentes</div>
+            <div class="stat-value green" id="statPresentes">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ausentes</div>
+            <div class="stat-value red" id="statAusentes">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Taxa de Presença</div>
+            <div class="stat-value blue" id="statTaxa">0%</div>
+          </div>
+        </div>
+
+        <div class="card" id="relatorioCard">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M8 12h8"/></svg>
+            Registros
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Matrícula</th>
+                  <th>Horário</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="relatorioBody">
+                <tr><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M8 12h8"/></svg><p>Selecione uma data para ver os registros</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let videoStream = null;
+let relatorioData = [];
+
+// ── AUTH ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('loginForm').style.display = tab==='login' ? 'flex' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? 'flex' : 'none';
+}
+
+function showAlert(id, msg, tipo='error') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert alert-${tipo}`;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display='none', 4000);
+}
+
+async function fazerLogin() {
+  const mat = document.getElementById('loginMatricula').value.trim();
+  const sen = document.getElementById('loginSenha').value.trim();
+  if (!mat) return showAlert('loginAlert', 'Informe a matrícula.');
+  document.getElementById('loginSpinner').style.display = 'block';
+  // Simulação de login (adapte para sua auth real)
+  await new Promise(r => setTimeout(r, 800));
+  document.getElementById('loginSpinner').style.display = 'none';
+  if (mat && sen) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appPage').style.display = 'flex';
+    carregarAlunos();
+    iniciarCamera();
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('dataRelatorio').value = hoje;
+  } else {
+    showAlert('loginAlert', 'Credenciais inválidas.');
+  }
+}
+
+async function cadastrarAluno() {
+  const nome = document.getElementById('regNome').value.trim();
+  const mat = document.getElementById('regMatricula').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const foto = document.getElementById('fotoInput').files[0];
+  if (!nome || !mat || !email || !foto) return showAlert('registerAlert', 'Preencha todos os campos.');
+  document.getElementById('regSpinner').style.display = 'block';
+  try {
+    const fd = new FormData();
+    fd.append('nome', nome); fd.append('matricula', mat); fd.append('email', email); fd.append('foto', foto);
+    const r = await fetch(`${API}/alunos/cadastrar`, { method:'POST', body:fd });
+    const d = await r.json();
+    if (r.ok) showAlert('registerAlert', 'Cadastrado com sucesso! Faça login.', 'success');
+    else showAlert('registerAlert', d.detail || 'Erro ao cadastrar.');
+  } catch(e) { showAlert('registerAlert', 'Sem conexão com a API.'); }
+  document.getElementById('regSpinner').style.display = 'none';
+}
+
+function logout() {
+  if(videoStream) videoStream.getTracks().forEach(t=>t.stop());
+  document.getElementById('appPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+}
+
+// ── NAVIGATION ──
+function showPage(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  document.getElementById('nav-'+pg).classList.add('active');
+  if(pg === 'cadastro') carregarAlunos();
+}
+
+// ── PHOTO PREVIEW ──
+function previewFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('photoPreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewCadFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('cadPhotoPreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('cadUploadIcon').style.display = 'none';
+    document.getElementById('cadUploadText').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── CAMERA ──
+async function iniciarCamera() {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:640, height:480 } });
+    document.getElementById('video').srcObject = videoStream;
+    setStatus('scanning', 'Câmera ativa — pronto para reconhecer');
+    document.getElementById('btnCapturar').disabled = false;
+    document.getElementById('btnCamera').style.display = 'none';
+  } catch(e) {
+    setStatus('error', 'Câmera não disponível');
+  }
+}
+
+function setStatus(type, msg) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot status-'+type;
+  document.getElementById('statusText').textContent = msg;
+}
+
+async function capturarEReconhecer() {
+  setStatus('scanning', 'Reconhecendo...');
+  document.getElementById('btnCapturar').disabled = true;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(async blob => {
+    try {
+      const fd = new FormData();
+      fd.append('foto', blob, 'captura.jpg');
+      const r = await fetch(`${API}/reconhecimento/registrar-presenca`, { method:'POST', body:fd });
+      const d = await r.json();
+      const resultDiv = document.getElementById('scannerResult');
+      resultDiv.style.display = 'block';
+      if (r.ok) {
+        setStatus('success', 'Presença registrada!');
+        resultDiv.innerHTML = `<div class="result-success">
+          <div class="result-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="32" height="32"><circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 4-7 9-7s9 3 9 7"/><path d="M16 11l2 2 4-4" stroke-width="2.5"/></svg></div>
+          <div><div class="result-name">${d.aluno || d.mensagem}</div><div class="result-meta">${d.matricula || ''} · ${d.data_hora || new Date().toLocaleString('pt-BR')}</div></div>
+        </div>`;
+      } else {
+        setStatus('error', 'Não reconhecido');
+        resultDiv.innerHTML = `<div class="result-error">
+          <div class="result-icon" style="color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="32" height="32"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+          <div><div class="result-name">Rosto não reconhecido</div><div class="result-meta">${d.detail || 'Aluno não cadastrado ou fraude detectada'}</div></div>
+        </div>`;
+      }
+    } catch(e) {
+      setStatus('error', 'Erro de conexão com API');
+    }
+    setTimeout(() => {
+      document.getElementById('btnCapturar').disabled = false;
+      setStatus('scanning', 'Câmera ativa — pronto para reconhecer');
+    }, 3000);
+  }, 'image/jpeg', 0.9);
+}
+
+// ── CADASTRO ──
+async function carregarAlunos() {
+  try {
+    const r = await fetch(`${API}/alunos/listar`);
+    const alunos = await r.json();
+    const tbody = document.getElementById('alunosBody');
+    if (!alunos.length) {
+      tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Nenhum aluno cadastrado</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = alunos.map(a => `
+      <tr>
+        <td><strong>${a.nome}</strong></td>
+        <td class="td-mono">${a.matricula}</td>
+        <td><span class="chip chip-green">● Ativo</span></td>
+      </tr>
+    `).join('');
+  } catch(e) {}
+}
+
+ async function cadastrarAlunoApp() {
+  const nome = document.getElementById('cadNome').value.trim();
+  const mat = document.getElementById('cadMatricula').value.trim();
+  const email = document.getElementById('cadEmail').value.trim();
+  const fotoInput = document.getElementById('cadFoto');
+  const alert = document.getElementById('cadAlert');
+
+  console.log('Foto files:', fotoInput.files);
+
+  if (!nome || !mat || !email) {
+    alert.textContent = 'Preencha nome, matrícula e e-mail.';
+    alert.className = 'alert alert-error';
+    alert.style.display = 'block';
+    return;
+  }
+
+  if (!fotoInput.files || fotoInput.files.length === 0) {
+    alert.textContent = 'Selecione uma foto do rosto.';
+    alert.className = 'alert alert-error';
+    alert.style.display = 'block';
+    return;
+  }
+
+  const foto = fotoInput.files[0];
+  document.getElementById('cadSpinner').style.display = 'block';
+
+  try {
+    const fd = new FormData();
+    fd.append('nome', nome);
+    fd.append('matricula', mat);
+    fd.append('email', email);
+    fd.append('foto', foto);
+
+    const r = await fetch(`${API}/alunos/cadastrar`, { method:'POST', body:fd });
+    const d = await r.json();
+
+    if (r.ok) {
+      alert.textContent = `Aluno ${nome} cadastrado com sucesso!`;
+      alert.className = 'alert alert-success';
+      alert.style.display = 'block';
+      limparCadastro();
+      carregarAlunos();
+    } else {
+      alert.textContent = d.detail || 'Erro ao cadastrar.';
+      alert.className = 'alert alert-error';
+      alert.style.display = 'block';
+    }
+  } catch(e) {
+    alert.textContent = 'Sem conexão com a API.';
+    alert.className = 'alert alert-error';
+    alert.style.display = 'block';
+  }
+  document.getElementById('cadSpinner').style.display = 'none';
+}
+
+
+function limparCadastro() {
+  document.getElementById('cadNome').value = '';
+  document.getElementById('cadMatricula').value = '';
+  document.getElementById('cadEmail').value = '';
+  document.getElementById('cadFoto').value = '';
+  document.getElementById('cadPhotoPreview').style.display = 'none';
+  document.getElementById('cadUploadIcon').style.display = 'block';
+  document.getElementById('cadUploadText').style.display = 'block';
+}
+
+// ── RELATORIO ──
+async function carregarRelatorio() {
+  const data = document.getElementById('dataRelatorio').value;
+  if (!data) return;
+  try {
+    const r = await fetch(`${API}/presenca/relatorio/${data}`);
+    const d = await r.json();
+    relatorioData = d.alunos || [];
+    const presentes = relatorioData.length;
+    const alunosR = await fetch(`${API}/alunos/listar`);
+    const todosAlunos = await alunosR.json();
+    const total = todosAlunos.length;
+    const ausentes = Math.max(0, total - presentes);
+    const taxa = total > 0 ? Math.round((presentes/total)*100) : 0;
+    document.getElementById('statPresentes').textContent = presentes;
+    document.getElementById('statAusentes').textContent = ausentes;
+    document.getElementById('statTaxa').textContent = taxa + '%';
+    document.getElementById('statsGrid').style.display = 'grid';
+    const tbody = document.getElementById('relatorioBody');
+    if (!relatorioData.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M8 12h8"/></svg><p>Nenhum registro para esta data</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = relatorioData.map(a => `
+      <tr>
+        <td><strong>${a.nome}</strong></td>
+        <td class="td-mono">${a.matricula}</td>
+        <td class="td-mono">${a.horario}</td>
+        <td><span class="chip chip-green">● Presente</span></td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    document.getElementById('relatorioBody').innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger); padding:24px">Erro ao conectar com a API</td></tr>`;
+  }
+}
+
+function exportarCSV() {
+  if (!relatorioData.length) return;
+  const data = document.getElementById('dataRelatorio').value;
+  const linhas = [['Nome','Matricula','Horario','Status'], ...relatorioData.map(a => [a.nome, a.matricula, a.horario, 'Presente'])];
+  const csv = linhas.map(l => l.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `presenca_${data}.csv`; a.click();
+}
+</script>
+</body>
+</html>
