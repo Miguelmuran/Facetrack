@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+opencv-python
+deepface
+tf-keras
+numpy
+pillow
+python-multipart==0.0.9
